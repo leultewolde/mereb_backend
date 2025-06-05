@@ -2,13 +2,17 @@ pipeline {
     agent any
 
     environment {
-        SONAR_HOST_URL = 'http://localhost:9000'
-        SONAR_TOKEN = credentials('SONAR_TOKEN') // replace with the actual credential ID
+        SONAR_TOKEN = credentials('SONAR_TOKEN')
+        SONAR_HOST_URL = 'http://sonarqube:9000'
     }
 
     tools {
-        maven 'Maven 3.8.6' // or your configured Maven version
-        jdk 'jdk-21'         // or your configured JDK version
+        maven 'Maven 3.8.6'
+        jdk 'jdk-21'
+    }
+
+    triggers {
+        githubPullRequest()
     }
 
     stages {
@@ -18,27 +22,53 @@ pipeline {
             }
         }
 
-        stage('Build & Unit Test') {
+        stage('Build & Test') {
+            when {
+                changeRequest(target: 'dev')
+            }
             steps {
                 sh './mvnw clean verify'
             }
         }
 
-        stage('SonarQube Analysis') {
+        stage('SonarQube') {
+            when {
+                changeRequest(target: 'dev')
+            }
             steps {
                 withSonarQubeEnv('MySonarQubeServer') {
-                    sh 'mvn sonar:sonar'
+                    sh """
+                        ./mvnw sonar:sonar \
+                        -Dsonar.projectKey=your-project-key \
+                        -Dsonar.host.url=$SONAR_HOST_URL \
+                        -Dsonar.login=$SONAR_TOKEN
+                    """
                 }
             }
         }
 
-        stage('Deploy to Local Docker') {
-                    steps {
-                        sh 'docker-compose -f docker-compose.dev.yml up -d --build'
-                sh './wait-for-health.sh'
+        stage('Quality Gate') {
+            when {
+                changeRequest(target: 'dev')
+            }
+            steps {
+                timeout(time: 1, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
             }
         }
 
+        stage('Deploy (Optional)') {
+            when {
+                changeRequest(target: 'dev')
+            }
+            steps {
+                sh 'docker-compose -f docker-compose.dev.yml down || true'
+                sh 'docker-compose -f docker-compose.dev.yml build'
+                sh 'docker-compose -f docker-compose.dev.yml up -d'
+                sh './wait-for-health.sh'
+            }
+        }
     }
 
     post {
