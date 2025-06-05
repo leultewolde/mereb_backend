@@ -2,13 +2,8 @@ pipeline {
     agent any
 
     environment {
-        SONAR_HOST_URL = 'http://localhost:9000'
+        //SONAR_HOST_URL = 'http://localhost:9000'
         SONAR_TOKEN = credentials('SONAR_TOKEN') // replace with the actual credential ID
-    }
-
-    tools {
-        maven 'Maven 3.8.6' // or your configured Maven version
-        jdk 'jdk-21'         // or your configured JDK version
     }
 
     stages {
