@@ -143,7 +143,6 @@
             <version>1.19.1</version>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 
     <build>
