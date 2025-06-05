@@ -1,0 +1,68 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: mereb_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: mereb_pgadmin
+    restart: unless-stopped
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@mereb.app
+      PGADMIN_DEFAULT_PASSWORD: admin
+    depends_on:
+      - postgres
+  backend-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mereb_backend_dev
+    depends_on:
+      - postgres
+    env_file:
+      - .env.dev
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+    ports:
+      - "8080:8080"
+
+  backend-staging:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mereb_backend_staging
+    depends_on:
+      - postgres
+    env_file:
+      - .env.staging
+    environment:
+      SPRING_PROFILES_ACTIVE: staging
+    ports:
+      - "8081:8080"
+
+  backend-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mereb_backend_test
+    depends_on:
+      - postgres
+    env_file:
+      - .env.test
+    environment:
+      SPRING_PROFILES_ACTIVE: test-docker
+    ports:
+      - "8082:8080"
+
+volumes:
+  pgdata:
