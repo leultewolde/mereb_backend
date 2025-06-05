@@ -18,7 +18,7 @@ pipeline {
                 changeRequest(target: 'dev')
             }
             steps {
-                sh './mvnw clean verify'
+                sh './mvn clean verify -Dtestcontainers.Ryuk.disabled=true'
             }
         }
 
