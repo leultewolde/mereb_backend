@@ -57,7 +57,7 @@ pipeline {
             steps {
                 withCredentials([file(credentialsId: 'env-dev-file', variable: 'ENV_FILE')]) {
                     sh """
-                        sudo cp $ENV_FILE .env.dev
+                        cp \$ENV_FILE .env.dev
                         docker compose -f ${DOCKER_COMPOSE_FILE} down || true
                         docker compose -f ${DOCKER_COMPOSE_FILE} up -d --build
                         docker compose -f ${DOCKER_COMPOSE_FILE} ps
