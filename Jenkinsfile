@@ -50,14 +50,14 @@ pipeline {
         stage('Deploy (Dev Docker)') {
             steps {
                 script {
-                    sh 'docker-compose -f ${DOCKER_COMPOSE_FILE} down || true'
+                    sh 'docker compose -f ${DOCKER_COMPOSE_FILE} down || true'
                     sh 'docker compose -f ${DOCKER_COMPOSE_FILE} up -d --build'
                     sh 'docker compose -f ${DOCKER_COMPOSE_FILE} ps'
 
                     echo 'Waiting for app health...'
                     sh '''
                         for i in {1..10}; do
-                          if curl -sf http://localhost:8080/actuator/health; then
+                          if curl -sf http://localhost:8888/actuator/health; then
                             echo "App is healthy!"
                             exit 0
                           fi
