@@ -2,8 +2,13 @@ pipeline {
     agent any
 
     environment {
-        SONAR_TOKEN = credentials('SONAR_TOKEN')
-        SONAR_HOST_URL = 'http://sonarqube:9000'
+        SONARQUBE_ENV = 'SonarQube' // Match your configured SonarQube server name
+        DOCKER_COMPOSE_FILE = 'docker-compose.dev.yml'
+    }
+
+    options {
+        skipDefaultCheckout()
+        disableConcurrentBuilds()
     }
 
     stages {
@@ -13,27 +18,13 @@ pipeline {
             }
         }
 
-        stage('Build & Test') {
+        stage('Sonar + Build + Test') {
             when {
                 changeRequest(target: 'dev')
             }
             steps {
-                sh './mvnw clean verify -Dtestcontainers.Ryuk.disabled=true'
-            }
-        }
-
-        stage('SonarQube') {
-            when {
-                changeRequest(target: 'dev')
-            }
-            steps {
-                withSonarQubeEnv('MySonarQubeServer') {
-                    sh """
-                        ./mvnw sonar:sonar \
-                        -Dsonar.projectKey=your-project-key \
-                        -Dsonar.host.url=$SONAR_HOST_URL \
-                        -Dsonar.login=$SONAR_TOKEN
-                    """
+                withSonarQubeEnv("${SONARQUBE_ENV}") {
+                    sh './mvnw clean verify sonar:sonar -Djacoco.skip=false'
                 }
             }
         }
@@ -43,21 +34,33 @@ pipeline {
                 changeRequest(target: 'dev')
             }
             steps {
-                timeout(time: 1, unit: 'MINUTES') {
+                timeout(time: 2, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
             }
         }
 
-        stage('Deploy (Optional)') {
-            when {
-                changeRequest(target: 'dev')
-            }
+        stage('Deploy (Dev Docker)') {
             steps {
-                sh 'docker-compose -f docker-compose.dev.yml down || true'
-                sh 'docker-compose -f docker-compose.dev.yml build'
-                sh 'docker-compose -f docker-compose.dev.yml up -d'
-                sh './wait-for-health.sh'
+                script {
+                    sh 'docker-compose -f ${DOCKER_COMPOSE_FILE} down || true'
+                    sh 'docker compose -f ${DOCKER_COMPOSE_FILE} up -d --build'
+                    sh 'docker compose -f ${DOCKER_COMPOSE_FILE} ps'
+
+                    echo 'Waiting for app health...'
+                    sh '''
+                        for i in {1..10}; do
+                          if curl -sf http://localhost:8080/actuator/health; then
+                            echo "App is healthy!"
+                            exit 0
+                          fi
+                          echo "Waiting for app..."
+                          sleep 5
+                        done
+                        echo "App failed to start in time"
+                        exit 1
+                    '''
+                }
             }
         }
     }
