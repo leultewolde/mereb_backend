@@ -30,21 +30,38 @@ pipeline {
         }
 
         stage('Quality Gate') {
-            when {
-                changeRequest(target: 'dev')
-            }
-            steps {
-                timeout(time: 2, unit: 'MINUTES') {
-                    //waitForQualityGate abortPipeline: true
-                    script {
-                        def qualityGate = waitForQualityGate()
-                        echo "Quality Gate status: ${qualityGate.status}"
+                    steps {
+                        script {
+                            def ceTaskId = sh(script: "grep ceTaskId .scannerwork/report-task.txt | cut -d'=' -f2", returnStdout: true).trim()
+                    echo "Polling SonarQube for task ID: ${ceTaskId}"
+
+                    def status = "PENDING"
+                    def retries = 30
+
+                    for (int i = 0; i < retries; i++) {
+                                sleep 5
+                        def taskJson = sh(script: "curl -s -u ${SONAR_TOKEN}: https://sonarqube:9000/api/ce/task?id=${ceTaskId}", returnStdout: true).trim()
+                        status = sh(script: "echo '${taskJson}' | jq -r '.task.status'", returnStdout: true).trim()
+                        echo "Current SonarQube task status: ${status}"
+
+                        if (status == "SUCCESS") {
+                                    break
+                        } else if (status == "FAILED" || i == retries - 1) {
+                                    error "SonarQube task failed or timed out"
+                        }
+                    }
+
+                    def analysisId = sh(script: "echo '${taskJson}' | jq -r '.task.analysisId'", returnStdout: true).trim()
+                    def gateJson = sh(script: "curl -s -u ${SONAR_TOKEN}: https://sonarqube:9000/api/qualitygates/project_status?analysisId=${analysisId}", returnStdout: true).trim()
+                    def qualityStatus = sh(script: "echo '${gateJson}' | jq -r '.projectStatus.status'", returnStdout: true).trim()
+                    echo "Quality Gate result: ${qualityStatus}"
+
+                    if (qualityStatus != "OK") {
+                                error "Quality Gate failed: ${qualityStatus}"
                     }
                 }
             }
         }
-
-
 
 
         stage('Deploy (Dev Docker)') {
