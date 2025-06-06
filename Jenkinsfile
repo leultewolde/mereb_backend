@@ -35,42 +35,20 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
-                    environment {
-                        SONAR_HOST_URL = 'http://sonarqube:9000'
-            }
             steps {
-                        withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'TOKEN')]) {
-                            sh """
-                        mvn sonar:sonar \
-                          -Dsonar.projectKey=mereb_backend \
-                          -Dsonar.host.url=$SONAR_HOST_URL \
-                          -Dsonar.login=$TOKEN
-                    """
-
-                    echo 'Waiting for SonarQube task to finish...'
-
-                    sh '''
-                        SONAR_TASK_ID=$(grep ceTaskId .scannerwork/report-task.txt | cut -d= -f2)
-                        SONAR_URL="$SONAR_HOST_URL/api/ce/task?id=$SONAR_TASK_ID"
-                        echo "Polling \$SONAR_URL"
-                        while true; do
-                            STATUS=$(curl -s -u "$TOKEN:" "$SONAR_URL" | jq -r .task.status)
-                            if [ "$STATUS" == "SUCCESS" ]; then
-                                echo "SonarQube analysis succeeded."
-                                break
-                            elif [ "$STATUS" == "FAILED" ]; then
-                                echo "SonarQube analysis failed."
-                                exit 1
-                            else
-                                echo "Status: $STATUS. Waiting..."
-                                sleep 5
-                            fi
-                        done
-                    '''
+                withSonarQubeEnv('SonarQube') {
+                    sh 'mvn sonar:sonar'
                 }
             }
         }
 
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 2, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
 
 
 
