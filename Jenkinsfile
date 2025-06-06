@@ -30,39 +30,44 @@ pipeline {
             }
         }
 
-        stage('Quality Gate') {
-                    steps {
-                        script {
-                            def ceTaskId = sh(script: "grep ceTaskId .scannerwork/report-task.txt | cut -d'=' -f2", returnStdout: true).trim()
-                    echo "Polling SonarQube for task ID: ${ceTaskId}"
+        stage('SonarQube Analysis') {
+                    environment {
+                        SONAR_HOST_URL = 'http://sonarqube:9000'
+            }
+            steps {
+                        withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'TOKEN')]) {
+                            sh """
+                        mvn sonar:sonar \
+                          -Dsonar.projectKey=mereb_backend \
+                          -Dsonar.host.url=$SONAR_HOST_URL \
+                          -Dsonar.login=$TOKEN
+                    """
 
-                    def status = "PENDING"
-                    def retries = 30
+                    echo 'Waiting for SonarQube task to finish...'
 
-                    for (int i = 0; i < retries; i++) {
+                    SONAR_TASK_ID=$(cat .scannerwork/report-task.txt | grep ceTaskId | cut -d'=' -f2)
+                    SONAR_URL="$SONAR_HOST_URL/api/ce/task?id=$SONAR_TASK_ID"
+
+                    sh """
+                        echo "Polling $SONAR_URL"
+                        while true; do
+                            STATUS=$(curl -s -u "$TOKEN:" "$SONAR_URL" | jq -r .task.status)
+                            if [ "$STATUS" == "SUCCESS" ]; then
+                                echo "SonarQube analysis succeeded."
+                                break
+                            elif [ "$STATUS" == "FAILED" ]; then
+                                echo "SonarQube analysis failed."
+                                exit 1
+                            else
+                                echo "Status: $STATUS. Waiting..."
                                 sleep 5
-                        def taskJson = sh(script: "curl -s -u ${SONAR_TOKEN}: https://sonarqube:9000/api/ce/task?id=${ceTaskId}", returnStdout: true).trim()
-                        status = sh(script: "echo '${taskJson}' | jq -r '.task.status'", returnStdout: true).trim()
-                        echo "Current SonarQube task status: ${status}"
-
-                        if (status == "SUCCESS") {
-                                    break
-                        } else if (status == "FAILED" || i == retries - 1) {
-                                    error "SonarQube task failed or timed out"
-                        }
-                    }
-
-                    def analysisId = sh(script: "echo '${taskJson}' | jq -r '.task.analysisId'", returnStdout: true).trim()
-                    def gateJson = sh(script: "curl -s -u ${SONAR_TOKEN}: https://sonarqube:9000/api/qualitygates/project_status?analysisId=${analysisId}", returnStdout: true).trim()
-                    def qualityStatus = sh(script: "echo '${gateJson}' | jq -r '.projectStatus.status'", returnStdout: true).trim()
-                    echo "Quality Gate result: ${qualityStatus}"
-
-                    if (qualityStatus != "OK") {
-                                error "Quality Gate failed: ${qualityStatus}"
-                    }
+                            fi
+                        done
+                    """
                 }
             }
         }
+
 
 
         stage('Deploy (Dev Docker)') {
