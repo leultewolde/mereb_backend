@@ -34,4 +34,3 @@ build/
 ### VS Code ###
 .vscode/
 /build-and-compose.sh
-/infra/docker-compose.infra.yml
