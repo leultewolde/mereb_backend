@@ -22,7 +22,12 @@ pipeline {
                 sh 'docker ps'
           }
         }
-
+        stage('Initialize') {
+            steps {
+                echo 'Cleaning the workspace before checkout.'
+                cleanWs()
+            }
+        }
         stage('Checkout') {
             steps {
                 checkout scm
