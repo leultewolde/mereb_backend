@@ -4,6 +4,7 @@ pipeline {
     environment {
         SONARQUBE_ENV = 'SonarQube' // Match your configured SonarQube server name
         DOCKER_COMPOSE_FILE = 'docker-compose.dev.yml'
+        SONAR_TOKEN = credentials('SONAR_TOKEN')
     }
 
     options {
