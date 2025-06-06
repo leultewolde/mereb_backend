@@ -29,7 +29,7 @@ pipeline {
             }
             steps {
                 withSonarQubeEnv("${SONARQUBE_ENV}") {
-                    sh './mvnw clean verify sonar:sonar -Dsonar.projectKey=mereb_backend'
+                    sh 'mvn verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=leultewolde_mereb_backend'
                 }
             }
         }
