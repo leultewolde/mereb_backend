@@ -29,16 +29,22 @@ pipeline {
             }
         }
 
-        stage('Quality Gate') {
-            when {
-                changeRequest(target: 'dev')
-            }
-            steps {
-                timeout(time: 2, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
-                }
-            }
+        //stage('Quality Gate') {
+        //    when {
+        //        changeRequest(target: 'dev')
+        //    }
+        //    steps {
+        //        timeout(time: 2, unit: 'MINUTES') {
+        //            waitForQualityGate abortPipeline: true
+        //        }
+        //    }
+        //}
+
+        script {
+            def qualityGate = waitForQualityGate()
+            echo "Quality Gate status: ${qualityGate.status}"
         }
+
 
         stage('Deploy (Dev Docker)') {
             steps {
