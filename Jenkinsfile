@@ -28,29 +28,24 @@ pipeline {
                 changeRequest(target: 'dev')
             }
             steps {
-                withSonarQubeEnv("${SONARQUBE_ENV}") {
-                    sh './mvnw clean verify sonar:sonar -Djacoco.skip=false'
-                }
-            }
-        }
-
-        stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('SonarQube') {
-                    sh 'mvn sonar:sonar'
+                withSonarQubeEnv() {
+                    sh './mvnw clean verify sonar:sonar -Dsonar.projectKey=mereb_backend'
                 }
             }
         }
 
         stage('Quality Gate') {
             steps {
-                timeout(time: 2, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
+                timeout(time: 5, unit: 'MINUTES') {
+                    script {
+                        def qg = waitForQualityGate()
+                        if (qg.status != 'OK') {
+                            error "Pipeline aborted due to a quality gate failure: ${qg.status}"
+                        }
+                    }
                 }
             }
         }
-
-
 
         stage('Deploy (Dev Docker)') {
             steps {
