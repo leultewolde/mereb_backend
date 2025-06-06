@@ -7,6 +7,10 @@ pipeline {
         SONAR_TOKEN = credentials('SONAR_TOKEN')
     }
 
+    tools {
+        maven 'Maven 3.9.10'
+    }
+
     options {
         skipDefaultCheckout()
         disableConcurrentBuilds()
