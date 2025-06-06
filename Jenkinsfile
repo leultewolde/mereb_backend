@@ -29,7 +29,7 @@ pipeline {
             }
             steps {
                 withSonarQubeEnv("${SONARQUBE_ENV}") {
-                    sh './mvnw clean verify sonar:sonar -Dsonar.projectKey=mereb_backend'
+                    sh './mvnw clean verify sonar:sonar -Dsonar.projectKey=mereb-app'
                 }
             }
         }
@@ -49,10 +49,13 @@ pipeline {
 
         stage('Deploy (Dev Docker)') {
             steps {
-                script {
-                    sh 'docker compose -f ${DOCKER_COMPOSE_FILE} down || true'
-                    sh 'docker compose -f ${DOCKER_COMPOSE_FILE} up -d --build'
-                    sh 'docker compose -f ${DOCKER_COMPOSE_FILE} ps'
+                withCredentials([file(credentialsId: 'env-dev-file', variable: 'ENV_FILE')]) {
+                    sh """
+                        cp \$ENV_FILE .env.dev
+                        docker compose -f ${DOCKER_COMPOSE_FILE} down || true
+                        docker compose -f ${DOCKER_COMPOSE_FILE} up -d --build
+                        docker compose -f ${DOCKER_COMPOSE_FILE} ps
+                    """
 
                     echo 'Waiting for app health...'
                     sh '''
