@@ -28,7 +28,7 @@ pipeline {
                 changeRequest(target: 'dev')
             }
             steps {
-                withSonarQubeEnv() {
+                withSonarQubeEnv("${SONARQUBE_ENV}") {
                     sh './mvnw clean verify sonar:sonar -Dsonar.projectKey=mereb_backend'
                 }
             }
