@@ -45,11 +45,10 @@ pipeline {
 
                     echo 'Waiting for SonarQube task to finish...'
 
-                    SONAR_TASK_ID=$(cat .scannerwork/report-task.txt | grep ceTaskId | cut -d'=' -f2)
-                    SONAR_URL="$SONAR_HOST_URL/api/ce/task?id=$SONAR_TASK_ID"
-
-                    sh """
-                        echo "Polling $SONAR_URL"
+                    sh '''
+                        SONAR_TASK_ID=$(grep ceTaskId .scannerwork/report-task.txt | cut -d= -f2)
+                        SONAR_URL="$SONAR_HOST_URL/api/ce/task?id=$SONAR_TASK_ID"
+                        echo "Polling \$SONAR_URL"
                         while true; do
                             STATUS=$(curl -s -u "$TOKEN:" "$SONAR_URL" | jq -r .task.status)
                             if [ "$STATUS" == "SUCCESS" ]; then
@@ -63,10 +62,11 @@ pipeline {
                                 sleep 5
                             fi
                         done
-                    """
+                    '''
                 }
             }
         }
+
 
 
 
