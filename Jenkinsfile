@@ -2,62 +2,86 @@ pipeline {
     agent any
 
     environment {
+        SONARQUBE_ENV = 'SonarQube' // Match your configured SonarQube server name
+        DOCKER_COMPOSE_FILE = 'docker-compose.dev.yml'
         SONAR_TOKEN = credentials('SONAR_TOKEN')
-        SONAR_HOST_URL = 'http://sonarqube:9000'
+    }
+
+    tools {
+        maven 'Maven 3.9.10'
+    }
+
+    options {
+        skipDefaultCheckout()
+        disableConcurrentBuilds()
     }
 
     stages {
+        stage('Check Docker') {
+            steps {
+                sh 'docker ps'
+          }
+        }
+        stage('Initialize') {
+            steps {
+                echo 'Cleaning the workspace before checkout.'
+                cleanWs()
+            }
+        }
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
 
-        stage('Build & Test') {
+        stage('Sonar + Build + Test') {
             when {
                 changeRequest(target: 'dev')
             }
             steps {
-                sh './mvnw clean verify'
-            }
-        }
-
-        stage('SonarQube') {
-            when {
-                changeRequest(target: 'dev')
-            }
-            steps {
-                withSonarQubeEnv('MySonarQubeServer') {
-                    sh """
-                        ./mvnw sonar:sonar \
-                        -Dsonar.projectKey=your-project-key \
-                        -Dsonar.host.url=$SONAR_HOST_URL \
-                        -Dsonar.login=$SONAR_TOKEN
-                    """
+                withSonarQubeEnv("${SONARQUBE_ENV}") {
+                    sh './mvnw clean verify sonar:sonar -Dsonar.projectKey=mereb-app'
                 }
             }
         }
 
         stage('Quality Gate') {
-            when {
-                changeRequest(target: 'dev')
-            }
             steps {
-                timeout(time: 1, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
+                timeout(time: 5, unit: 'MINUTES') {
+                    script {
+                        def qg = waitForQualityGate()
+                        if (qg.status != 'OK') {
+                            error "Pipeline aborted due to a quality gate failure: ${qg.status}"
+                        }
+                    }
                 }
             }
         }
 
-        stage('Deploy (Optional)') {
-            when {
-                changeRequest(target: 'dev')
-            }
+        stage('Deploy (Dev Docker)') {
             steps {
-                sh 'docker-compose -f docker-compose.dev.yml down || true'
-                sh 'docker-compose -f docker-compose.dev.yml build'
-                sh 'docker-compose -f docker-compose.dev.yml up -d'
-                sh './wait-for-health.sh'
+                withCredentials([file(credentialsId: 'env-dev-file', variable: 'ENV_FILE')]) {
+                    sh """
+                        cp \$ENV_FILE .env.dev
+                        docker compose -f ${DOCKER_COMPOSE_FILE} down || true
+                        docker compose -f ${DOCKER_COMPOSE_FILE} up -d --build
+                        docker compose -f ${DOCKER_COMPOSE_FILE} ps
+                    """
+
+                    echo 'Waiting for app health...'
+                    sh '''
+                        for i in {1..10}; do
+                          if curl -sf http://localhost:8888/actuator/health; then
+                            echo "App is healthy!"
+                            exit 0
+                          fi
+                          echo "Waiting for app..."
+                          sleep 5
+                        done
+                        echo "App failed to start in time"
+                        exit 1
+                    '''
+                }
             }
         }
     }
