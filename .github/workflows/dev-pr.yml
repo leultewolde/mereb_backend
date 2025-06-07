@@ -34,23 +34,27 @@ jobs:
             -Dsonar.login=$SONAR_TOKEN
 
       - name: Docker Login
-        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      - name: Build & Push Image
+      - name: Build & Push Docker Image
         run: |
-          docker build -t docker.io/${{ secrets.DOCKER_USERNAME }}/mereb-backend:dev .
+          docker build --platform linux/amd64 -t docker.io/${{ secrets.DOCKER_USERNAME }}/mereb-backend:dev .
           docker push docker.io/${{ secrets.DOCKER_USERNAME }}/mereb-backend:dev
 
       - name: Setup kubectl
         uses: azure/setup-kubectl@v3
 
       - name: Set KUBECONFIG
+        shell: bash
         run: |
           echo "${{ secrets.KUBECONFIG }}" | base64 -d > kubeconfig
           export KUBECONFIG=$PWD/kubeconfig
+          kubectl config get-contexts
 
       - name: Deploy to LKE
+        shell: bash
         run: |
+          export KUBECONFIG=$PWD/kubeconfig
           kubectl apply -f k8s/
           kubectl rollout status deployment/mereb-backend
 
