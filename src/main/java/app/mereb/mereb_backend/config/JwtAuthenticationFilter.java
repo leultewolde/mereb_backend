@@ -27,13 +27,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final UserRepository userRepository;
 
     private static final List<String> EXCLUDED_URLS = List.of(
-            "/api/v1/auth",
-            "/api/swagger-ui",
-            "/api/v3/api-docs",
+            "/v1/auth",
+            "/swagger-ui",
+            "/v3/api-docs",
             "/actuator/health",
-            "/actuator",
-            "/api/actuator",
-            "/api/actuator/health"
+            "/actuator"
     );
 
     private void rejectUnauthorizedRequest(HttpServletRequest request, HttpServletResponse response, String message) throws IOException {
