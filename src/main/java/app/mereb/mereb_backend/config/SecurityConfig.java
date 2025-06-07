@@ -1,6 +1,7 @@
 package app.mereb.mereb_backend.config;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -14,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+@Slf4j
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -24,6 +26,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        log.debug("Configuring SecurityFilterChain");
         return http
                 .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
@@ -31,16 +34,9 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/v1/auth/**",
                                 "/swagger-ui/**",
+                                "/swagger-ui.html/**",
                                 "/v3/api-docs/**",
-                                "/swagger-ui.html",
-
-                                "/api/v1/auth/**",
-                                "/api/swagger-ui/**",
-                                "/api/v3/api-docs/**",
-                                "/api/swagger-ui.html",
-
-                                "/actuator/**",
-                                "/api/actuator/**"
+                                "/actuator/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

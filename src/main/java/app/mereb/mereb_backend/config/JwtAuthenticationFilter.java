@@ -8,6 +8,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,6 +19,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -25,26 +27,35 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final UserRepository userRepository;
 
     private static final List<String> EXCLUDED_URLS = List.of(
-            "/api/v1/auth/",
-            "/api/swagger-ui/",
-            "/api/v3/api-docs/",
-            "/api/actuator/",
-
-            "/v1/auth/",
-            "/swagger-ui/",
-            "/v3/api-docs/",
-            "/actuator/"
+            "/api/v1/auth",
+            "/api/swagger-ui",
+            "/api/v3/api-docs",
+            "/actuator/health",
+            "/actuator",
+            "/api/actuator",
+            "/api/actuator/health"
     );
+
+    private void rejectUnauthorizedRequest(HttpServletRequest request, HttpServletResponse response, String message) throws IOException {
+        String requestURI = request.getRequestURI();
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json");
+        response.getWriter().write("{\"error\":\"" + message + "\"}");
+        log.warn("Unauthorized access to {}: {}", requestURI, message);
+        log.info("Unauthorized access to {}: {}", requestURI, message);
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
+        System.out.println("doFilterInternal called for: " + request.getRequestURI());
         String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"error\":\"Unauthorized - no token\"}");
+//            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+//            response.setContentType("application/json");
+//            response.getWriter().write("{\"error\":\"Unauthorized - no token\"}");
+            rejectUnauthorizedRequest(request, response, "Unauthorized - no token");
             return;
         }
 
@@ -64,13 +75,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 );
                 SecurityContextHolder.getContext().setAuthentication(auth);
             } else {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+//                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                rejectUnauthorizedRequest(request, response, "Unauthorized - invalid user in token");
                 return;
             }
         } catch (Exception e) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"error\":\"Unauthorized - invalid token\"}");
+//            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+//            response.setContentType("application/json");
+//            response.getWriter().write("{\"error\":\"Unauthorized - invalid token\"}");
+            rejectUnauthorizedRequest(request, response, "Unauthorized - invalid token");
             return;
         }
 
@@ -79,6 +92,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-        return EXCLUDED_URLS.stream().anyMatch(uri -> request.getRequestURI().startsWith(uri));
+        System.out.println("shouldNotFilter applied for: " +
+                request.getRequestURI() + " => " +
+                EXCLUDED_URLS.stream().anyMatch(uri -> request.getRequestURI().contains(uri)));
+        return EXCLUDED_URLS.stream().anyMatch(uri -> request.getRequestURI().contains(uri));
     }
 }
