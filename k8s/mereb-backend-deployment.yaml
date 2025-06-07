@@ -14,7 +14,8 @@ spec:
     spec:
       containers:
         - name: mereb-backend
-          image: docker.io/ivtheforth/mereb-backend:dev
+          image: docker.io/ivtheforth/mereb-backend:dev-1749333480
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           envFrom:
@@ -26,5 +27,8 @@ spec:
             httpGet:
               path: /api/actuator/health
               port: 8080
-            initialDelaySeconds: 5
+            initialDelaySeconds: 30     # Let Spring Boot fully start
             periodSeconds: 10
+            timeoutSeconds: 2           # Avoid long hangs on slow responses
+            successThreshold: 1
+            failureThreshold: 6
