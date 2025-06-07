@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mereb-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mereb-backend
+  template:
+    metadata:
+      labels:
+        app: mereb-backend
+    spec:
+      containers:
+        - name: mereb-backend
+          image: docker.io/ivtheforth/mereb-backend:dev
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: mereb-config
+            - secretRef:
+                name: mereb-secret
+          readinessProbe:
+            httpGet:
+              path: /api/actuator/health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
