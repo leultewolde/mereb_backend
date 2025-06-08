@@ -27,12 +27,14 @@ jobs:
           VERSION=$(date +'%Y.%m.%d.%H%M')
           echo "NEW_TAG=$VERSION" >> $GITHUB_ENV
 
-      - name: Create Git Tag
+      - name: Git Tag and Push
+        env:
+          GH_TOKEN: ${{ secrets.GH_WRITE_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag ${{ env.NEW_TAG }}
-          git push origin ${{ env.NEW_TAG }}
+          git push https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }} ${{ env.NEW_TAG }}
 
       - name: Generate Changelog
         id: changelog

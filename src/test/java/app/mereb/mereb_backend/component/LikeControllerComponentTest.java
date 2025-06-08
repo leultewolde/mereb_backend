@@ -109,10 +109,10 @@ class LikeControllerComponentTest {
     @Test
     void shouldRejectUnauthenticatedLikeRequests() throws Exception {
         mockMvc.perform(post("/v1/likes/" + postId))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
 
         mockMvc.perform(delete("/v1/likes/" + postId))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
     }
 }
 

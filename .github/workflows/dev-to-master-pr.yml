@@ -20,7 +20,15 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Install GitHub CLI
-        uses: cli/cli-action@v2
+        run: |
+          sudo apt update
+          sudo apt install -y gh
+
+      - name: Debug GH Auth
+        env:
+          GH_TOKEN: ${{ secrets.GH_WRITE_TOKEN }}
+        run: |
+          gh auth status
 
       - name: Create PR from dev to master
         id: create_pr
@@ -31,7 +39,7 @@ jobs:
             --base master \
             --head dev \
             --title "Auto: Sync dev to master" \
-            --body "This PR syncs changes from dev to master after a successful merge." || echo "PR already exists or failed"
+            --body "This PR syncs changes from dev to master after a successful merge."
 
       - name: Add 'automerge' label
         env:

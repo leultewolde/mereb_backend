@@ -91,11 +91,11 @@ class UserControllerComponentTest {
     @Test
     void shouldRejectUnauthenticatedRequests() throws Exception {
         mockMvc.perform(get("/v1/users/me"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
 
         mockMvc.perform(put("/v1/users/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"fail\"}"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
     }
 }
