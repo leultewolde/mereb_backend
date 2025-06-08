@@ -1,0 +1,43 @@
+name: Create PR from dev to master
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  create-pr:
+    if: github.event.pusher.name != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install GitHub CLI
+        uses: cli/cli-action@v2
+
+      - name: Create PR from dev to master
+        id: create_pr
+        env:
+          GH_TOKEN: ${{ secrets.GH_WRITE_TOKEN }}
+        run: |
+          gh pr create \
+            --base master \
+            --head dev \
+            --title "Auto: Sync dev to master" \
+            --body "This PR syncs changes from dev to master after a successful merge." || echo "PR already exists or failed"
+
+      - name: Add 'automerge' label
+        env:
+          GH_TOKEN: ${{ secrets.GH_WRITE_TOKEN }}
+        run: |
+          PR_URL=$(gh pr list --head dev --base master --state open --json url -q '.[0].url')
+          if [ -n "$PR_URL" ]; then
+            gh pr edit "$PR_URL" --add-label "automerge"
+          fi
