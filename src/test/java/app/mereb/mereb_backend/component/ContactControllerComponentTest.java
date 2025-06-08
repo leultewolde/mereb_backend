@@ -31,7 +31,6 @@ class ContactControllerComponentTest {
     @Autowired private ContactRepository contactRepository;
 
     private String userToken;
-    private UUID userId;
 
     @BeforeEach
     void setup() {
@@ -58,7 +57,6 @@ class ContactControllerComponentTest {
 
         userRepository.saveAll(List.of(user, match));
         userToken = jwtUtil.generateToken(user);
-        userId = user.getId();
     }
 
     @Test
@@ -81,7 +79,7 @@ class ContactControllerComponentTest {
         mockMvc.perform(post("/v1/contacts/upload")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
     }
 
     @Test
