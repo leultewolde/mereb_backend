@@ -11,8 +11,27 @@ jobs:
   automerge:
     if: contains(join(github.event.pull_request.labels.*.name, ','), 'automerge')
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
 
     steps:
+      - name: Wait for CI to Succeed
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const { data: checks } = await github.rest.checks.listForRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: pr.head.sha
+            });
+
+            const failing = checks.check_runs.filter(run => run.conclusion !== 'success');
+            if (failing.length > 0) {
+              core.setFailed('CI checks have not passed yet.');
+            }
+
       - name: Enable Auto-Merge
         env:
           GH_TOKEN: ${{ secrets.GH_WRITE_TOKEN }}
