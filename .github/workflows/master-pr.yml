@@ -1,4 +1,4 @@
-name: PR to Dev
+name: PR to Master
 
 on:
   pull_request:
