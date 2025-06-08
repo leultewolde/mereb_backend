@@ -1,7 +1,6 @@
-package app.mereb.mereb_backend;
+package app.mereb.mereb_backend.config;
 
 import app.mereb.mereb_backend.auth.JwtUtil;
-import app.mereb.mereb_backend.config.TestableJwtFilter;
 import app.mereb.mereb_backend.user.User;
 import app.mereb.mereb_backend.user.UserRepository;
 import jakarta.servlet.FilterChain;
@@ -13,7 +12,8 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 class JwtAuthenticationFilterTest {
@@ -75,3 +75,4 @@ class JwtAuthenticationFilterTest {
         verify(chain).doFilter(request, response);
     }
 }
+
