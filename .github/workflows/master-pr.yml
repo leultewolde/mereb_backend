@@ -9,9 +9,9 @@ jobs:
   prod-ci-cd:
     runs-on: ubuntu-latest
 
-    env:
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      SONAR_HOST_URL: https://sonarcloud.io
+#    env:
+#      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+#      SONAR_HOST_URL: https://sonarcloud.io
 
     steps:
       - name: Checkout
@@ -26,34 +26,34 @@ jobs:
       - name: Build and Test
         run: ./mvnw clean verify
 
-      - name: SonarQube Analysis
-        run: |
-          ./mvnw sonar:sonar \
-            -Dsonar.projectKey=leultewolde_mereb_backend \
-            -Dsonar.host.url=$SONAR_HOST_URL \
-            -Dsonar.login=$SONAR_TOKEN
-
-      - name: Docker Login
-        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-
-      - name: Set Tag
-        id: tag
-        run: echo "tag=prod-${{ github.sha }}" >> $GITHUB_OUTPUT
-
-      - name: Build & Push Docker Image
-        run: |
-          docker build --platform linux/amd64 -t docker.io/${{ secrets.DOCKER_USERNAME }}/mereb-backend:${{ steps.tag.outputs.tag }} .
-          docker push docker.io/${{ secrets.DOCKER_USERNAME }}/mereb-backend:${{ steps.tag.outputs.tag }}
-
-      - name: Setup kubectl
-        uses: azure/setup-kubectl@v3
-
-      - name: Set KUBECONFIG
-        shell: bash
-        run: |
-          echo "${{ secrets.KUBECONFIG }}" | base64 -d > kubeconfig
-          export KUBECONFIG=$PWD/kubeconfig
-          kubectl config get-contexts
+#      - name: SonarQube Analysis
+#        run: |
+#          ./mvnw sonar:sonar \
+#            -Dsonar.projectKey=leultewolde_mereb_backend \
+#            -Dsonar.host.url=$SONAR_HOST_URL \
+#            -Dsonar.login=$SONAR_TOKEN
+#
+#      - name: Docker Login
+#        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+#
+#      - name: Set Tag
+#        id: tag
+#        run: echo "tag=prod-${{ github.sha }}" >> $GITHUB_OUTPUT
+#
+#      - name: Build & Push Docker Image
+#        run: |
+#          docker build --platform linux/amd64 -t docker.io/${{ secrets.DOCKER_USERNAME }}/mereb-backend:${{ steps.tag.outputs.tag }} .
+#          docker push docker.io/${{ secrets.DOCKER_USERNAME }}/mereb-backend:${{ steps.tag.outputs.tag }}
+#
+#      - name: Setup kubectl
+#        uses: azure/setup-kubectl@v3
+#
+#      - name: Set KUBECONFIG
+#        shell: bash
+#        run: |
+#          echo "${{ secrets.KUBECONFIG }}" | base64 -d > kubeconfig
+#          export KUBECONFIG=$PWD/kubeconfig
+#          kubectl config get-contexts
 
 #      - name: Deploy to LKE
 #        shell: bash
