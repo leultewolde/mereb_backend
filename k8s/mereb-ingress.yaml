@@ -8,10 +8,10 @@ metadata:
 spec:
   tls:
     - hosts:
-        - mereb.app
-      secretName: mereb-tls
+        - dev.api.mereb.app
+      secretName: dev-mereb-tls
   rules:
-    - host: mereb.app
+    - host: dev.api.mereb.app
       http:
         paths:
           - path: /api
