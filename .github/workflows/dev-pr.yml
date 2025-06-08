@@ -6,7 +6,7 @@ on:
       - dev
 
 jobs:
-  ci-cd:
+  dev-ci-cd:
     runs-on: ubuntu-latest
 
     env:
