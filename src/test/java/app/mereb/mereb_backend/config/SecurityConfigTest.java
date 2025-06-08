@@ -1,4 +1,4 @@
-package app.mereb.mereb_backend;
+package app.mereb.mereb_backend.config;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +18,7 @@ class SecurityConfigTest {
 
     @Test
     void testUnauthorizedAccessToProtectedEndpoint() throws Exception {
-        mockMvc.perform(get("/api/protected"))
+        mockMvc.perform(get("/v1/superadmins"))
                 .andExpect(status().isForbidden());
     }
 }
