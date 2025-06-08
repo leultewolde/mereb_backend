@@ -54,6 +54,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 //            response.setContentType("application/json");
 //            response.getWriter().write("{\"error\":\"Unauthorized - no token\"}");
             rejectUnauthorizedRequest(request, response, "Unauthorized - no token");
+            filterChain.doFilter(request, response);
             return;
         }
 
@@ -96,3 +97,4 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return EXCLUDED_URLS.stream().anyMatch(uri -> request.getRequestURI().contains(uri));
     }
 }
+

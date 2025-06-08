@@ -145,7 +145,7 @@ class PostControllerComponentTest {
         mockMvc.perform(post("/v1/posts")
                         .content("{\"content\":\"test\"}")
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -169,7 +169,7 @@ class PostControllerComponentTest {
     @Test
     void shouldRejectRequestWithoutToken() throws Exception {
         mockMvc.perform(get("/v1/posts"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
     }
 
     @Test

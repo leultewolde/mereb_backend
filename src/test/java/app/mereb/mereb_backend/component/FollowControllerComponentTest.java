@@ -110,9 +110,9 @@ class FollowControllerComponentTest {
     @Test
     void shouldRejectUnauthenticatedFollowRequests() throws Exception {
         mockMvc.perform(post("/v1/follow/" + targetUsername))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
 
         mockMvc.perform(delete("/v1/follow/" + targetUsername))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
     }
 }
