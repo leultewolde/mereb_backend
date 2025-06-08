@@ -1,40 +1,40 @@
 name: Auto Merge PRs with 'automerge' Label
 
 on:
-  pull_request:
+  workflow_run:
+    workflows: ["PR to Master"]  # name of your CI workflow
     types:
-      - labeled
-      - synchronize
-      - reopened
+      - completed
 
 jobs:
   automerge:
-    if: contains(join(github.event.pull_request.labels.*.name, ','), 'automerge')
+    if: >
+      github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-      contents: write
 
     steps:
-      - name: Wait for CI to Succeed
+      - name: Checkout PR info
         uses: actions/github-script@v7
         with:
+          github-token: ${{ secrets.GH_WRITE_TOKEN }}
           script: |
-            const pr = context.payload.pull_request;
-            const { data: checks } = await github.rest.checks.listForRef({
+            const prs = await github.rest.pulls.list({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: pr.head.sha
+              state: "open",
+              head: `${context.repo.owner}:dev`,
+              base: "master"
             });
 
-            const failing = checks.check_runs.filter(run => run.conclusion !== 'success');
-            if (failing.length > 0) {
-              core.setFailed('CI checks have not passed yet.');
+            const pr = prs.data.find(pr => pr.labels.some(label => label.name === 'automerge'));
+            if (!pr) {
+              console.log("No matching PR with 'automerge' label found.");
+              return;
             }
 
-      - name: Enable Auto-Merge
-        env:
-          GH_TOKEN: ${{ secrets.GH_WRITE_TOKEN }}
-        run: |
-          gh pr merge "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/pull/${{ github.event.pull_request.number }}" \
-          --auto --merge
+            await github.rest.pulls.merge({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+              merge_method: "merge"
+            });
