@@ -1,0 +1,50 @@
+name: Auto Tag & Release
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  tag-and-release:
+    name: Tag and Create GitHub Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Get Latest Tag
+        id: get_tag
+        run: |
+          git fetch --tags
+          TAG=$(git tag --sort=-creatordate | head -n 1)
+          echo "LATEST_TAG=$TAG" >> $GITHUB_ENV
+
+      - name: Generate New Tag
+        id: generate_tag
+        run: |
+          VERSION=$(date +'%Y.%m.%d.%H%M')
+          echo "NEW_TAG=$VERSION" >> $GITHUB_ENV
+
+      - name: Create Git Tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag ${{ env.NEW_TAG }}
+          git push origin ${{ env.NEW_TAG }}
+
+      - name: Generate Changelog
+        id: changelog
+        uses: heinrichreimer/action-github-changelog-generator@v2.3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ env.NEW_TAG }}
+          name: Release ${{ env.NEW_TAG }}
+          body_path: CHANGELOG.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
