@@ -1,6 +1,5 @@
 package app.mereb.mereb_backend.config;
 
-import static org.junit.jupiter.api.Assertions.*;
 
 import app.mereb.mereb_backend.auth.JwtUtil;
 import app.mereb.mereb_backend.user.User;
