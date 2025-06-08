@@ -39,7 +39,7 @@ jobs:
             --base master \
             --head dev \
             --title "Auto: Sync dev to master" \
-            --body "This PR syncs changes from dev to master after a successful merge." || echo "PR already exists or failed"
+            --body "This PR syncs changes from dev to master after a successful merge."
 
       - name: Add 'automerge' label
         env:
